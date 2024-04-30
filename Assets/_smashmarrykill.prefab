@@ -94,7 +94,7 @@ GameObject:
   - component: {fileID: 114285410497322120}
   - component: {fileID: 114937800645921990}
   - component: {fileID: 114001947374490260}
-  - component: {fileID: 114002731369954268}
+  - component: {fileID: 114306398304276104}
   m_Layer: 0
   m_Name: _smashmarrykill
   m_TagString: Untagged
@@ -1096,20 +1096,6 @@ MonoBehaviour:
   - {fileID: 102504605451904758}
   - {fileID: 102409710591157648}
   - {fileID: 102709536934025488}
---- !u!114 &114002731369954268
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1462601653378140}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b8863a47ca0d4fde9a89588fc0b5cda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  TwitchHelpMessage: 
-  TwitchManualCode: 
-  TwitchAbandonModule: []
 --- !u!114 &114010533687528312
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -1183,6 +1169,20 @@ MonoBehaviour:
   ModuleType: smashmarrykill
   ModuleDisplayName: Smash, Marry, Kill
   RequiresTimerVisibility: 0
+--- !u!114 &114306398304276104
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1462601653378140}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e84a4af73a97b4a469710b6c709963c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TwitchHelpMessage: 
+  TwitchManualCode: 
+  TwitchAbandonModule: []
 --- !u!114 &114416769851434784
 MonoBehaviour:
   m_ObjectHideFlags: 1

@@ -28,13 +28,13 @@ public class SmashMarryKill : ModdedModule
     {
         foreach (KMSelectable candidate in candidates)
         {
-            KMSelectable unused = candidate.Set(onInteract: () =>
+            candidate.Set(onInteract: () =>
             {
                 if (candidate.GetComponentInChildren<TextMesh>().color == Color.white)
                 {
-                    SMKselect(currentIndex, candidate, candidate.GetComponentInChildren<TextMesh>());
-                    currentIndex += 1;
-                    currentIndex %= 3;
+                    result.text = "" + (SMKwords)currentIndex;
+                    candidate.GetComponentInChildren<TextMesh>().color = Color.green;
+                    Log("Pressed button " + (currentIndex + 1));
                     if (currentIndex == 0)
                     {
                         foreach (KMSelectable candidate_ in candidates)
@@ -42,18 +42,10 @@ public class SmashMarryKill : ModdedModule
                             candidate_.GetComponentInChildren<TextMesh>().color = Color.white;
                         }
                     }
+                    currentIndex += 1;
+                    currentIndex %= 3;
                 }
             });
         }
-    }
-
-    ///<summary>Selection of Smash/Marry/Kill.</summary>
-    ///<param name="index">The current index of the Smash/Marry/Kill cycle.</param>
-    ///<param name="candidateButton">The button to alter.</param>
-    ///<param name="candidateName">The button's TextMesh to alter.</param>
-    private void SMKselect(int index, KMSelectable candidateButton, TextMesh candidateName)
-    {
-        result.text = "" + (SMKwords)index;
-        candidateName.color = Color.green;
     }
 }
