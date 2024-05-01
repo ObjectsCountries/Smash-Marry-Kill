@@ -11,21 +11,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 615501dbe4f3fe94fbf4b564abb10237, type: 3}
   m_Name: ModConfig
   m_EditorClassIdentifier: 
-  id: module
-  title: Module
+  id: smashmarrykill
+  title: Smash, Marry, Kill
   author: ObjectsCountries
-  description: 'Flavor text here.
-
-
-    ID: module
-
-    Credits: me because i am awesome and cool and stuff
-
-
-    [url=http://ktane.timwi.de/HTML/Module.html]HTML Manual[/url]
-
-    [url=http://ktane.timwi.de/PDF/Module.html]PDF Manual[/url]'
+  description: "It's smashing with hammers, get your mind out of the gutter.\n\nID:
+    smashmarrykill\nCredits: me because i am awesome and cool and stuff, and Lord
+    Kabewm\u2122 i mean Peppino Spaghetti for doing the SMK itself.\n\n[url=http://ktane.timwi.de/HTML/Smash,%20Marry,%20Kill.html]HTML
+    Manual[/url]\n[url=http://ktane.timwi.de/PDF/Smash,%20Marry,%20Kill.pdf]PDF Manual[/url]"
   version: 1
-  outputFolder: C:\Program Files (x86)\Steam\steamapps\common\Keep Talking and Nobody
-    Explodes\mods
+  outputFolder: /home/kasra/.steam/steam/steamapps/common/Keep Talking and Nobody
+    Explodes/mods
   previewImage: {fileID: 0}
