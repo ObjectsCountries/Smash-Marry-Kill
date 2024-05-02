@@ -15,7 +15,7 @@ public class SmashMarryKill : ModdedModule
     public KMBombInfo bomb;
     public KMSelectable[] candidates;
     public KMBossModule boss;
-    private string[] ignoredModules;
+    private string[] ignoredModules = new string[] { };
 
     private int currentIndex = 0;
     private bool firstClick = false;
@@ -36,12 +36,12 @@ public class SmashMarryKill : ModdedModule
     private List<string> marryModules = new List<string>();
     private List<string> killModules = new List<string>();
     private List<string> newSolved = new List<string>();
-    private string[] newSolvedCopy;
+    private string[] newSolvedCopy = new string[] { };
     private string lastSolvedModule = "";
     private string[] oldSolved = new string[] { };
 
     private int modulesLeft = -1;
-    private int totalNonIgnored;
+    private int totalNonIgnored = -1;
 
     protected override void Awake()
     {
@@ -216,7 +216,24 @@ public class SmashMarryKill : ModdedModule
                 "X-Rotor",
                 "XY-Ray"
             });
-        moduleNames.AddRange(new string[] { "Wires", "Simon Says", "The Button", "Complicated Wires", "swag module", "Memory" });
+        moduleNames = bomb.GetSolvedModuleNames().Where(x => !ignoredModules.Contains(x)).ToList();
+        if (moduleNames.Count == 0)
+        {
+            candidates[0].GetComponentInChildren<TextMesh>().text = "";
+            candidates[0].gameObject.SetActive(false);
+            candidates[1].GetComponentInChildren<TextMesh>().fontSize = 90;
+            candidates[1].GetComponentInChildren<TextMesh>().text = "SOLVE";
+            candidates[1].GetComponentInChildren<KMHighlightable>().transform.localScale = new Vector3(8, 1, 8);
+            candidates[2].GetComponentInChildren<TextMesh>().text = "";
+            candidates[2].gameObject.SetActive(false);
+            result.text = "";
+            candidates[1].Set(onInteract: () =>
+            {
+                Solve("No non-ignored mods, solving.");
+                candidates[1].gameObject.SetActive(false);
+            });
+            return;
+        }
         foreach (KMSelectable candidate in candidates)
         {
             TextMesh moduleName = candidate.GetComponentInChildren<TextMesh>();
@@ -242,6 +259,7 @@ public class SmashMarryKill : ModdedModule
                             {
                                 moduleName_.text = "";
                                 done = true;
+                                candidate_.gameObject.SetActive(false);
                             }
                             if (done)
                             {
