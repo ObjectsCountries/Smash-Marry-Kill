@@ -32,6 +32,7 @@ public class SmashMarryKill : ModdedModule
 
     private List<string> moduleNames = new List<string>();
     private List<string> usedModules = new List<string>();
+    private Dictionary<string, SMKwords> allModules = new Dictionary<string, SMKwords>();
     private List<string> smashModules = new List<string>();
     private List<string> marryModules = new List<string>();
     private List<string> killModules = new List<string>();
@@ -217,15 +218,18 @@ public class SmashMarryKill : ModdedModule
                 "XY-Ray"
             });
         moduleNames = bomb.GetSolvedModuleNames().Where(x => !ignoredModules.Contains(x)).ToList();
+        TextMesh[] candidateTexts = candidates.Select(x => x.GetComponentInChildren<TextMesh>()).ToArray();
         if (moduleNames.Count == 0)
         {
-            candidates[0].GetComponentInChildren<TextMesh>().text = "";
-            candidates[0].gameObject.SetActive(false);
-            candidates[1].GetComponentInChildren<TextMesh>().fontSize = 90;
-            candidates[1].GetComponentInChildren<TextMesh>().text = "SOLVE";
-            candidates[1].GetComponentInChildren<KMHighlightable>().transform.localScale = new Vector3(8, 1, 8);
-            candidates[2].GetComponentInChildren<TextMesh>().text = "";
-            candidates[2].gameObject.SetActive(false);
+            Get<KMSelectable>().Children = new[] { candidates[1] };
+            Get<KMSelectable>().UpdateChildrenProperly();
+            candidateTexts[0].text = "";
+            candidateTexts[0].gameObject.SetActive(false);
+            candidateTexts[1].fontSize = 90;
+            candidateTexts[1].text = "SOLVE";
+            candidates[1].Highlight.transform.localScale = new Vector3(8, 1, 8);
+            candidateTexts[2].text = "";
+            candidateTexts[2].gameObject.SetActive(false);
             result.text = "";
             candidates[1].Set(onInteract: () =>
             {
