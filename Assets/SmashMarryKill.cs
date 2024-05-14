@@ -39,177 +39,26 @@ public class SmashMarryKill : ModdedModule
     private int modulesSolved = -1;
     private int totalNonIgnored = -1;
 
+    private bool mmHidingThis = false;
+
+    public void MysteryModuleHiding()
+    {
+        Log("This module is currently being hidden by Mystery Module.");
+        mmHidingThis = true;
+    }
+
+    public void MysteryModuleRevealing()
+    {
+        Log("This module has been revealed by Mystery Module.");
+        mmHidingThis = false;
+    }
+
     protected void Start()
     {
         ignoredModules = boss.GetIgnoredModules("Smash, Marry, Kill", new string[]{
-                "100 Levels of Defusal",
-                "Amnesia",
-                "BadTV",
-                "Bamboozling Time Keeper",
-                "Button Messer",
-                "Cookie Jars",
-                "Custom Keys",
-                "Divided Squares",
-                "Doomsday Button",
-                "Don't Touch Anything",
-                "Encrypted Hangman",
-                "Encryption Bingo",
-                "Four-Card Monte",
-                "Hogwarts",
-                "Lunchtime",
-                "Mental Math",
-                "OmegaDestroyer",
-                "Password Destroyer",
-                "Pow",
-                "Rules",
-                "Sbemail Songs",
-                "Smash, Marry, Kill",
-                "Supermassive Black Hole",
-                "SUSadmin",
-                "Sysadmin",
-                "Tax Returns",
-                "Tech Support",
-                "The Impostor",
-                "The Klaxon",
-                "The Stopwatch",
-                "The Time Keeper",
-                "The Troll",
-                "Timing is Everything",
-                "Turn The Key",
-                "Turn The Keys",
-                "White Hole",
-                "Zener Cards",
-                "Blind Maze",
-                "Colour Code",
-                "Free Parking",
-                "Heraldry",
-                "Langton's Ant",
-                "Laundry",
-                "Password Generator",
-                "Planets",
-                "Waste Management",
-                "4D Maze",
-                "7",
-                "ASCII Maze",
-                "Bamboozled Again",
-                "Bamboozling Button",
-                "Bamboozling Button Grid",
-                "Beanboozled Again",
-                "Black Cipher",
-                "Bordered Keys",
-                "Burger Alarm",
-                "Cheat Checkout",
-                "Colour Shuffle",
-                "Connected Monitors",
-                "Cruello",
-                "Cruel Colour Flash",
-                "Cruel Match 'em",
-                "Cruel Stars",
-                "Cruel Synesthesia",
-                "The cRule",
-                "Cryptic Cycle",
-                "The Cube",
-                "Cursed Double-Oh",
-                "Cursed Vault",
-                "Decay",
-                "Devilish Eggs",
-                "Dimension King",
-                "Disordered Keys",
-                "Dragon Energy",
-                "Dreamcipher",
-                "Dungeon",
-                "Dungeon 2nd Floor",
-                "Echolocation",
-                "Encrypted Morse",
-                "English Entries",
-                "Factory Maze",
-                "Faulty RGB Maze",
-                "Forget Me Now",
-                "Forget's Ultimate Showdown",
-                "Game of Life Cruel",
-                "Graphic Memory",
-                "The Great Void",
-                "hexOS",
-                "Hill Cycle",
-                "The Hypercolor",
-                "Hyperrullo",
-                "Identifying Soulless",
-                "Indigo Cipher",
-                "Jenga",
-                "Jumble Cycle",
-                "Kudosudoku",
-                "Latin Hypercube",
-                "LEGOs",
-                "Lombax Cubes",
-                "Lousy Chess",
-                "Matrix Mapping",
-                "Mazeswapper",
-                "Melody Memory",
-                "Micro-Modules",
-                "Mineswapper",
-                "Misery Squares",
-                "Mislocation",
-                "Misordered Keys",
-                "Mystic Maze",
-                "The Necronomicon",
-                "Neutrinos",
-                "Not Coordinates",
-                "Not Double-Oh",
-                "Not Murder",
-                "Not X01",
-                "Number Nimbleness",
-                "The Octadecayotton",
-                "Odd One Out",
-                "Old Fogey",
-                "One Links To All",
-                "Orange Cipher",
-                "Outrageous",
-                "Pattern Hypercube",
-                "Phosphorescence",
-                "Polygrid",
-                "Puzzword",
-                "Quintuples",
-                "Railway Cargo Loading",
-                "Rain Hell",
-                "Recorded Keys",
-                "Red Cipher",
-                "Reordered Keys",
-                "Repo Selector",
-                "RGB Arithmetic",
-                "RGB Hypermaze",
-                "RGB Maze",
-                "Robit Programming",
-                "Robot Programming",
-                "The Samsung",
-                "Scalar Dials",
-                "Seven Choose Four",
-                "Shapes And Bombs",
-                "Silo Authorization",
-                "Simon Sends",
-                "Simon Sings",
-                "Simon Stores",
-                "Simon's Ultimate Showdown",
-                "Simon Swindles",
-                "The Sphere",
-                "Sporadic Segments",
-                "Superposition",
-                "Ten-Button Color Code",
-                "Three Cryptic Steps",
-                "Torture",
-                "Turtle Robot",
-                "Ultimate Cipher",
-                "Ultimate Cycle",
-                "UltraStores",
-                "Uncolour Flash",
-                "Unfair Cipher",
-                "Unfair's Cruel Revenge",
-                "Unfair's Forgotten Ciphers",
-                "Unfair's Revenge",
-                "Walking Cube",
-                "Wonder Cipher",
-                "X-Ring",
-                "X-Rotor",
-                "XY-Ray"
+               "Smash, Marry, Kill",
+               "Mystery Module",
+               "Organization"
             });
         totalNonIgnored = bomb.GetSolvableModuleNames().Count(x => !ignoredModules.Contains(x));
         moduleNames = bomb.GetSolvableModuleNames().Where(x => !ignoredModules.Contains(x)).Distinct().ToList();
@@ -354,13 +203,19 @@ public class SmashMarryKill : ModdedModule
 
     private void SMKselect(string lastSolved)
     {
-        if (lastSolved != "" && allModules.ContainsKey(lastSolved) && allModules[lastSolved] != currentSelection)
+        if (lastSolved != "" && allModules.ContainsKey(lastSolved) && allModules[lastSolved] != currentSelection && !mmHidingThis)
         {
             Strike("STRIKE! Solved " + lastSolved + ", a " + allModules[lastSolved] + " module when a " + currentSelection + " module was meant to be solved.");
         }
         if (allModules.ContainsKey(lastSolved))
         {
             possibilities.Remove(allModules[lastSolved]);
+        }
+        if (lastSolved == "" && modulesSolved == totalNonIgnored && !mmHidingThis)
+        {
+            Solve("Solved all non-ignored modules before categorization was finished.");
+            result.text = "DONE";
+            return;
         }
         currentSelection = possibilities.PickRandom();
         result.text = "" + currentSelection;
@@ -386,8 +241,27 @@ public class SmashMarryKill : ModdedModule
             oldSolved = newSolvedCopy;
             if (modulesSolved == totalNonIgnored)
             {
-                Solve("Done!");
-                result.text = "DONE";
+                Log("---");
+                if (newSolved.Count(x => !ignoredModules.Contains(x)) != 0)
+                {
+                    lastSolvedModule = newSolved[0];
+                    Log("The last solved module is " + lastSolvedModule + ".");
+                }
+                Log("Smash, Marry, Kill is now ready to be solved.");
+                candidates[0].gameObject.SetActive(false);
+                candidates[1].gameObject.SetActive(true);
+                candidates[2].gameObject.SetActive(false);
+                Get<KMSelectable>().Children = new[] { candidates[1] };
+                Get<KMSelectable>().UpdateChildrenProperly();
+                candidates[1].Highlight.transform.localScale = new Vector3(8, 1, 8);
+                result.text = "SOLVE";
+                candidates[1].Set(onInteract: () =>
+                {
+                    Solve("Done!");
+                    result.text = "DONE";
+                    candidates[1].gameObject.SetActive(false);
+                });
+
             }
             else if (modulesSolved != 0)
             {
@@ -405,7 +279,14 @@ public class SmashMarryKill : ModdedModule
             modulesSolved++;
             if (modulesSolved != 0)
             {
-                Strike("STRIKE! Solved a module before categorization was finished.");
+                if (mmHidingThis)
+                {
+                    Log("A module was solved while Smash, Marry, Kill was hidden.");
+                }
+                else
+                {
+                    Strike("STRIKE! Solved a module before categorization was finished.");
+                }
             }
         }
     }
