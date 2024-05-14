@@ -1,11 +1,9 @@
 ﻿using Wawa.Extensions;
 using Wawa.Modules;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using KModkit;
 
 public class SmashMarryKill : ModdedModule
 {
@@ -28,25 +26,21 @@ public class SmashMarryKill : ModdedModule
     }
 
     private List<SMKwords> possibilities = new List<SMKwords>();
-    private SMKwords currentSelection;
+    private SMKwords? currentSelection = null;
 
     private List<string> moduleNames = new List<string>();
     private List<string> usedModules = new List<string>();
     private Dictionary<string, SMKwords> allModules = new Dictionary<string, SMKwords>();
-    private List<string> smashModules = new List<string>();
-    private List<string> marryModules = new List<string>();
-    private List<string> killModules = new List<string>();
     private List<string> newSolved = new List<string>();
     private string[] newSolvedCopy = new string[] { };
     private string lastSolvedModule = "";
     private string[] oldSolved = new string[] { };
 
-    private int modulesLeft = -1;
+    private int modulesSolved = -1;
     private int totalNonIgnored = -1;
 
-    protected override void Awake()
+    protected void Start()
     {
-        totalNonIgnored = bomb.GetSolvableModuleNames().Count(x => !ignoredModules.Contains(x));
         ignoredModules = boss.GetIgnoredModules("Smash, Marry, Kill", new string[]{
                 "100 Levels of Defusal",
                 "Amnesia",
@@ -217,7 +211,8 @@ public class SmashMarryKill : ModdedModule
                 "X-Rotor",
                 "XY-Ray"
             });
-        moduleNames = bomb.GetSolvedModuleNames().Where(x => !ignoredModules.Contains(x)).ToList();
+        totalNonIgnored = bomb.GetSolvableModuleNames().Count(x => !ignoredModules.Contains(x));
+        moduleNames = bomb.GetSolvableModuleNames().Where(x => !ignoredModules.Contains(x)).Distinct().ToList();
         TextMesh[] candidateTexts = candidates.Select(x => x.GetComponentInChildren<TextMesh>()).ToArray();
         if (moduleNames.Count == 0)
         {
@@ -241,10 +236,25 @@ public class SmashMarryKill : ModdedModule
         foreach (KMSelectable candidate in candidates)
         {
             TextMesh moduleName = candidate.GetComponentInChildren<TextMesh>();
-            do
+            if (moduleNames.Count > 2)
             {
-                moduleName.text = moduleNames[UnityEngine.Random.Range(0, moduleNames.Count)];
-            } while (usedModules.Contains(moduleName.text));
+                do
+                {
+                    moduleName.text = moduleNames[UnityEngine.Random.Range(0, moduleNames.Count)];
+                } while (usedModules.Contains(moduleName.text));
+            }
+            else
+            {
+                moduleName.text = Array.IndexOf(candidates, candidate) < moduleNames.Count ? moduleNames[Array.IndexOf(candidates, candidate)] : "";
+                if (moduleName.text == "")
+                {
+                    List<KMSelectable> children = Get<KMSelectable>().Children.ToList();
+                    children.Remove(candidate);
+                    Get<KMSelectable>().Children = children.ToArray();
+                    Get<KMSelectable>().UpdateChildrenProperly();
+                    candidate.gameObject.SetActive(false);
+                }
+            }
             usedModules.Add(moduleName.text);
             candidate.Set(onInteract: () =>
             {
@@ -253,6 +263,7 @@ public class SmashMarryKill : ModdedModule
                     Log("Categorized " + moduleName.text + " as " + result.text + ".");
                     moduleName.color = Color.green;
                     moduleNames.Remove(moduleName.text);
+                    allModules.Add(moduleName.text, (SMKwords)currentIndex);
                     if (currentIndex == 2 && firstClick && moduleNames.Count > 0)
                     {
                         bool done = false;
@@ -285,48 +296,55 @@ public class SmashMarryKill : ModdedModule
                         }
                     }
                     firstClick = true;
-                    switch (currentIndex)
-                    {
-                        case 0:
-                            smashModules.Add(moduleName.text);
-                            break;
-                        case 1:
-                            marryModules.Add(moduleName.text);
-                            break;
-                        case 2:
-                        default:
-                            killModules.Add(moduleName.text);
-                            break;
-                    }
                     currentIndex++;
                     currentIndex %= 3;
                     result.text = "" + (SMKwords)currentIndex;
-                    if (moduleNames.Count > 0)
+                    if (moduleNames.Count == 0)
                     {
-                        Log("DEBUG: moduleNames is now " + String.Join(", ", moduleNames.ToArray()) + ".");
-                    }
-                    else
-                    {
-                        Log("The SMASH modules are " + String.Join(", ", smashModules.ToArray()) + ".");
-                        Log("The MARRY modules are " + String.Join(", ", marryModules.ToArray()) + ".");
-                        Log("The KILL modules are " + String.Join(", ", killModules.ToArray()) + ".");
+                        if (allModules.Where(pair => pair.Value == SMKwords.SMASH).Select(pair => pair.Key).Count() == 0)
+                        {
+                            Log("No modules have been categorized under SMASH.");
+                        }
+                        else
+                        {
+                            Log("The SMASH modules are " + string.Join(", ", allModules.Where(pair => pair.Value == SMKwords.SMASH).Select(pair => pair.Key).ToArray()) + ".");
+                        }
+                        if (allModules.Where(pair => pair.Value == SMKwords.MARRY).Select(pair => pair.Key).Count() == 0)
+                        {
+                            Log("No modules have been categorized under MARRY.");
+                        }
+                        else
+                        {
+                            Log("The MARRY modules are " + string.Join(", ", allModules.Where(pair => pair.Value == SMKwords.MARRY).Select(pair => pair.Key).ToArray()) + ".");
+                        }
+                        if (allModules.Where(pair => pair.Value == SMKwords.KILL).Select(pair => pair.Key).Count() == 0)
+                        {
+                            Log("No modules have been categorized under KILL.");
+                        }
+                        else
+                        {
+                            Log("The KILL modules are " + string.Join(", ", allModules.Where(pair => pair.Value == SMKwords.KILL).Select(pair => pair.Key).ToArray()) + ".");
+                        }
                         foreach (KMSelectable candidate_ in candidates)
                         {
                             candidate_.GetComponentInChildren<TextMesh>().text = "";
                         }
-                        for (int s = 0; s < smashModules.Count; s++)
+                        string[] mods = bomb.GetSolvableModuleNames().Where(x => !ignoredModules.Contains(x)).ToArray();
+                        foreach (KeyValuePair<string, SMKwords> module in allModules)
                         {
-                            possibilities.Add(SMKwords.SMASH);
+                            for (int i = 0; i < mods.Count(x => x == module.Key && !bomb.GetSolvedModuleNames().Contains(x)); i++)
+                            {
+                                possibilities.Add(module.Value);
+                            }
                         }
-                        for (int m = 0; m < marryModules.Count; m++)
-                        {
-                            possibilities.Add(SMKwords.MARRY);
-                        }
-                        for (int k = 0; k < killModules.Count; k++)
-                        {
-                            possibilities.Add(SMKwords.KILL);
-                        }
+                        Get<KMSelectable>().Children = new KMSelectable[] { };
+                        Get<KMSelectable>().UpdateChildrenProperly();
+                        candidateTexts[0].gameObject.SetActive(false);
+                        candidateTexts[1].gameObject.SetActive(false);
+                        candidateTexts[2].gameObject.SetActive(false);
                         doneWithCategorization = true;
+                        result.fontSize = 90;
+                        result.transform.localPosition = new Vector3(0, 0.0106f, 0);
                         SMKselect("");
                     }
                 }
@@ -336,45 +354,26 @@ public class SmashMarryKill : ModdedModule
 
     private void SMKselect(string lastSolved)
     {
+        if (lastSolved != "" && allModules.ContainsKey(lastSolved) && allModules[lastSolved] != currentSelection)
+        {
+            Strike("STRIKE! Solved " + lastSolved + ", a " + allModules[lastSolved] + " module when a " + currentSelection + " module was meant to be solved.");
+        }
+        if (allModules.ContainsKey(lastSolved))
+        {
+            possibilities.Remove(allModules[lastSolved]);
+        }
         currentSelection = possibilities.PickRandom();
         result.text = "" + currentSelection;
-        result.fontSize = 90;
-        result.transform.localPosition = new Vector3(0, 0.0106f, 0);
         Log("Current selection: " + currentSelection);
-        string currentlySolvable = "";
-        switch (currentSelection)
-        {
-            case SMKwords.SMASH:
-                currentlySolvable = String.Join(", ", smashModules.ToArray());
-                break;
-            case SMKwords.MARRY:
-                currentlySolvable = String.Join(", ", marryModules.ToArray());
-                break;
-            case SMKwords.KILL:
-                currentlySolvable = String.Join(", ", killModules.ToArray());
-                break;
-        }
+        string currentlySolvable = string.Join(", ", allModules.Where(pair => pair.Value == currentSelection && bomb.GetSolvedModuleNames().Count(x => x == pair.Key) != bomb.GetSolvableModuleNames().Count(x => x == pair.Key)).Select(pair => pair.Key).ToArray());
         Log("You are allowed to solve any of the following: " + currentlySolvable + ".");
-        if (smashModules.Contains(lastSolved))
-        {
-            possibilities.Remove(SMKwords.SMASH);
-        }
-        else if (marryModules.Contains(lastSolved))
-        {
-            possibilities.Remove(SMKwords.MARRY);
-        }
-        else if (killModules.Contains(lastSolved))
-        {
-            possibilities.Remove(SMKwords.KILL);
-        }
-        Log("DEBUG: possibilities is " + String.Join(", ", possibilities.Select(s => s.ToString()).ToArray()) + ".");
     }
 
     void Update()
     {
-        if (modulesLeft != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x)) && doneWithCategorization)
+        if (modulesSolved != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x)) && doneWithCategorization)
         {
-            modulesLeft++;
+            modulesSolved++;
             newSolved = bomb.GetSolvedModuleNames().Where(x => !ignoredModules.Contains(x)).ToList();
             newSolvedCopy = bomb.GetSolvedModuleNames().Where(x => !ignoredModules.Contains(x)).ToArray();
             foreach (string module in oldSolved)
@@ -385,19 +384,28 @@ public class SmashMarryKill : ModdedModule
                 }
             }
             oldSolved = newSolvedCopy;
-            Log("DEBUG: modulesLeft is " + modulesLeft + ".");
-            if (modulesLeft == totalNonIgnored)
+            if (modulesSolved == totalNonIgnored)
             {
                 Solve("Done!");
+                result.text = "DONE";
             }
-            else if (modulesLeft != 0)
+            else if (modulesSolved != 0)
             {
                 Log("---");
                 if (newSolved.Count(x => !ignoredModules.Contains(x)) != 0)
                 {
                     lastSolvedModule = newSolved[0];
                     Log("The last solved module is " + lastSolvedModule + ".");
+                    SMKselect(lastSolvedModule);
                 }
+            }
+        }
+        else if (modulesSolved != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x)))
+        {
+            modulesSolved++;
+            if (modulesSolved != 0)
+            {
+                Strike("STRIKE! Solved a module before categorization was finished.");
             }
         }
     }
