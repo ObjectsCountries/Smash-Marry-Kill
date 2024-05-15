@@ -1,9 +1,11 @@
 ﻿using Wawa.Extensions;
 using Wawa.Modules;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using KModkit;
 
 public class SmashMarryKill : ModdedModule
 {
@@ -13,6 +15,7 @@ public class SmashMarryKill : ModdedModule
     public KMBombInfo bomb;
     public KMSelectable[] candidates;
     public KMBossModule boss;
+    private KMBombModule j = null;
     private string[] ignoredModules = new string[] { };
 
     private int currentIndex = 0;
@@ -38,8 +41,11 @@ public class SmashMarryKill : ModdedModule
 
     private int modulesSolved = -1;
     private int totalNonIgnored = -1;
+    int orgIndex = -1;
 
     private bool mmHidingThis = false;
+    private List<string> orgOrder = new List<string>();
+    private string hiddenByMM = "";
 
     public void MysteryModuleHiding()
     {
@@ -51,6 +57,33 @@ public class SmashMarryKill : ModdedModule
     {
         Log("This module has been revealed by Mystery Module.");
         mmHidingThis = false;
+    }
+
+    private IEnumerator WaitForOrg()
+    {
+        yield return new WaitForSeconds(.5f);
+        orgIndex = transform.parent.GetComponentsInChildren<KMBombModule>().IndexOf(m => m.ModuleDisplayName == "Organization");
+        Log("DEBUG: Organization's index in GetComponentsInChildren() is " + orgIndex + ".");
+        if (orgIndex > -1)
+        {
+            j = transform.parent.GetComponentsInChildren<KMBombModule>()[orgIndex];
+        }
+        if (j != null)
+        {
+            Log("DEBUG: j is not null.");
+            orgOrder = j.GetComponent("OrganizationScript").GetValue<List<string>>("order");
+        }
+        else
+        {
+            Log("DEBUG: j is null.");
+            orgOrder = new List<string>() { };
+        }
+        Log("DEBUG: orgOrder is " + string.Join(", ", orgOrder.ToArray()) + ".");
+    }
+
+    protected override void OnActivate()
+    {
+        StartCoroutine(WaitForOrg());
     }
 
     protected void Start()
@@ -217,11 +250,20 @@ public class SmashMarryKill : ModdedModule
             result.text = "DONE";
             return;
         }
-        currentSelection = possibilities.PickRandom();
+        if (orgOrder.Count == 0)
+        {
+            currentSelection = possibilities.PickRandom();
+            Log("Current selection: " + currentSelection);
+            string currentlySolvable = string.Join(", ", allModules.Where(pair => pair.Value == currentSelection && bomb.GetSolvedModuleNames().Count(x => x == pair.Key) != bomb.GetSolvableModuleNames().Count(x => x == pair.Key)).Select(pair => pair.Key).ToArray());
+            Log("You are allowed to solve any of the following: " + currentlySolvable + ".");
+        }
+        else if (allModules.ContainsKey(orgOrder[modulesSolved]))
+        {
+            currentSelection = allModules[orgOrder[modulesSolved]];
+            Log("Current selection: " + currentSelection);
+            Log("Organization is requiring " + orgOrder[modulesSolved] + " to be solved.");
+        }
         result.text = "" + currentSelection;
-        Log("Current selection: " + currentSelection);
-        string currentlySolvable = string.Join(", ", allModules.Where(pair => pair.Value == currentSelection && bomb.GetSolvedModuleNames().Count(x => x == pair.Key) != bomb.GetSolvableModuleNames().Count(x => x == pair.Key)).Select(pair => pair.Key).ToArray());
-        Log("You are allowed to solve any of the following: " + currentlySolvable + ".");
     }
 
     void Update()
