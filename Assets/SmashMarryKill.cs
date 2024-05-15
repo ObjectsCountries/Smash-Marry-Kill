@@ -15,7 +15,8 @@ public class SmashMarryKill : ModdedModule
     public KMBombInfo bomb;
     public KMSelectable[] candidates;
     public KMBossModule boss;
-    private KMBombModule j = null;
+    private KMBombModule org = null;
+    private KMBombModule mm = null;
     private string[] ignoredModules = new string[] { };
 
     private int currentIndex = 0;
@@ -41,11 +42,13 @@ public class SmashMarryKill : ModdedModule
 
     private int modulesSolved = -1;
     private int totalNonIgnored = -1;
-    int orgIndex = -1;
+    private int orgIndex = -1;
+    private KMBombModule[] allMMs;
+    private List<string> allHidden = new List<string>();
+    private int numberHiddenByMM = 0;
 
     private bool mmHidingThis = false;
     private List<string> orgOrder = new List<string>();
-    private string hiddenByMM = "";
 
     public void MysteryModuleHiding()
     {
@@ -59,42 +62,59 @@ public class SmashMarryKill : ModdedModule
         mmHidingThis = false;
     }
 
-    private IEnumerator WaitForOrg()
+    private IEnumerator WaitForOrgAndMM()
     {
-        yield return new WaitForSeconds(.5f);
+        yield return new WaitForSeconds(.1f);
         orgIndex = transform.parent.GetComponentsInChildren<KMBombModule>().IndexOf(m => m.ModuleDisplayName == "Organization");
+        allMMs = transform.parent.GetComponentsInChildren<KMBombModule>().Where(m => m.ModuleDisplayName == "Mystery Module").ToArray();
         Log("DEBUG: Organization's index in GetComponentsInChildren() is " + orgIndex + ".");
         if (orgIndex > -1)
         {
-            j = transform.parent.GetComponentsInChildren<KMBombModule>()[orgIndex];
+            org = transform.parent.GetComponentsInChildren<KMBombModule>()[orgIndex];
         }
-        if (j != null)
+        if (org != null)
         {
-            Log("DEBUG: j is not null.");
-            orgOrder = j.GetComponent("OrganizationScript").GetValue<List<string>>("order");
+            Log("DEBUG: org is not null.");
+            orgOrder = org.GetComponent("OrganizationScript").GetValue<List<string>>("order");
         }
         else
         {
-            Log("DEBUG: j is null.");
+            Log("DEBUG: org is null.");
             orgOrder = new List<string>() { };
         }
         Log("DEBUG: orgOrder is " + string.Join(", ", orgOrder.ToArray()) + ".");
+        if (allMMs.Length > 0)
+        {
+            foreach (KMBombModule MM in allMMs)
+            {
+                allHidden.Add(MM.GetComponent("MysteryModuleScript").GetValue<KMBombModule>("mystifiedModule").ModuleDisplayName);
+            }
+        }
+        Log("DEBUG: allHidden is " + string.Join(", ", allHidden.ToArray()) + ".");
+        for (int i = allHidden.Count - 1; i >= 0; i--)
+        {
+            if (bomb.GetSolvableModuleNames().Count(x => x == allHidden[i]) > 1)
+            {
+                allHidden.RemoveAt(i);
+            }
+        }
+        Setup();
     }
 
     protected override void OnActivate()
     {
-        StartCoroutine(WaitForOrg());
+        StartCoroutine(WaitForOrgAndMM());
     }
 
-    protected void Start()
+    private void Setup()
     {
         ignoredModules = boss.GetIgnoredModules("Smash, Marry, Kill", new string[]{
                "Smash, Marry, Kill",
                "Mystery Module",
                "Organization"
             });
-        totalNonIgnored = bomb.GetSolvableModuleNames().Count(x => !ignoredModules.Contains(x));
-        moduleNames = bomb.GetSolvableModuleNames().Where(x => !ignoredModules.Contains(x)).Distinct().ToList();
+        totalNonIgnored = bomb.GetSolvableModuleNames().Count(x => !allHidden.Contains(x) && !ignoredModules.Contains(x));
+        moduleNames = bomb.GetSolvableModuleNames().Where(x => !allHidden.Contains(x) && !ignoredModules.Contains(x)).Distinct().ToList();
         TextMesh[] candidateTexts = candidates.Select(x => x.GetComponentInChildren<TextMesh>()).ToArray();
         if (moduleNames.Count == 0)
         {
@@ -211,10 +231,11 @@ public class SmashMarryKill : ModdedModule
                         {
                             candidate_.GetComponentInChildren<TextMesh>().text = "";
                         }
-                        string[] mods = bomb.GetSolvableModuleNames().Where(x => !ignoredModules.Contains(x)).ToArray();
+                        string[] mods = bomb.GetSolvableModuleNames().Where(x => !ignoredModules.Contains(x) && !allHidden.Contains(x)).ToArray();
                         foreach (KeyValuePair<string, SMKwords> module in allModules)
                         {
-                            for (int i = 0; i < mods.Count(x => x == module.Key && !bomb.GetSolvedModuleNames().Contains(x)); i++)
+                            numberHiddenByMM = allHidden.Contains(module.Key) ? 1 : 0;
+                            for (int i = 0; i < mods.Count(x => x == module.Key && !bomb.GetSolvedModuleNames().Contains(x)) - numberHiddenByMM; i++)
                             {
                                 possibilities.Add(module.Value);
                             }
@@ -236,6 +257,11 @@ public class SmashMarryKill : ModdedModule
 
     private void SMKselect(string lastSolved)
     {
+        if (allHidden.Contains(lastSolved))
+        {
+            Log("Solved " + lastSolved + ", which was hidden by Mystery Module.");
+            return;
+        }
         if (lastSolved != "" && allModules.ContainsKey(lastSolved) && allModules[lastSolved] != currentSelection && !mmHidingThis)
         {
             Strike("STRIKE! Solved " + lastSolved + ", a " + allModules[lastSolved] + " module when a " + currentSelection + " module was meant to be solved.");
@@ -259,6 +285,8 @@ public class SmashMarryKill : ModdedModule
         }
         else if (allModules.ContainsKey(orgOrder[modulesSolved]))
         {
+            Log("DEBUG: modulesSolved is " + modulesSolved + ".");
+            Log("DEBUG: orgOrder[modulesSolved] is " + orgOrder[modulesSolved] + ".");
             currentSelection = allModules[orgOrder[modulesSolved]];
             Log("Current selection: " + currentSelection);
             Log("Organization is requiring " + orgOrder[modulesSolved] + " to be solved.");
@@ -268,11 +296,11 @@ public class SmashMarryKill : ModdedModule
 
     void Update()
     {
-        if (modulesSolved != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x)) && doneWithCategorization)
+        if (modulesSolved != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x) && !allHidden.Contains(x)) && doneWithCategorization)
         {
             modulesSolved++;
-            newSolved = bomb.GetSolvedModuleNames().Where(x => !ignoredModules.Contains(x)).ToList();
-            newSolvedCopy = bomb.GetSolvedModuleNames().Where(x => !ignoredModules.Contains(x)).ToArray();
+            newSolved = bomb.GetSolvedModuleNames().Where(x => !ignoredModules.Contains(x) && !allHidden.Contains(x)).ToList();
+            newSolvedCopy = bomb.GetSolvedModuleNames().Where(x => !ignoredModules.Contains(x) && !allHidden.Contains(x)).ToArray();
             foreach (string module in oldSolved)
             {
                 if (newSolved.Contains(module))
@@ -284,7 +312,7 @@ public class SmashMarryKill : ModdedModule
             if (modulesSolved == totalNonIgnored)
             {
                 Log("---");
-                if (newSolved.Count(x => !ignoredModules.Contains(x)) != 0)
+                if (newSolved.Count(x => !ignoredModules.Contains(x) && !allHidden.Contains(x)) != 0)
                 {
                     lastSolvedModule = newSolved[0];
                     Log("The last solved module is " + lastSolvedModule + ".");
@@ -308,7 +336,7 @@ public class SmashMarryKill : ModdedModule
             else if (modulesSolved != 0)
             {
                 Log("---");
-                if (newSolved.Count(x => !ignoredModules.Contains(x)) != 0)
+                if (newSolved.Count(x => !ignoredModules.Contains(x) && !allHidden.Contains(x)) != 0)
                 {
                     lastSolvedModule = newSolved[0];
                     Log("The last solved module is " + lastSolvedModule + ".");
@@ -316,14 +344,14 @@ public class SmashMarryKill : ModdedModule
                 }
             }
         }
-        else if (modulesSolved != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x)))
+        else if (modulesSolved != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x) && !allHidden.Contains(x)))
         {
             modulesSolved++;
             if (modulesSolved != 0)
             {
                 if (mmHidingThis)
                 {
-                    Log("A module was solved while Smash, Marry, Kill was hidden.");
+                    Log("A module was solved while Smash, Marry, Kill was hidden by Mystery Module.");
                 }
                 else
                 {
