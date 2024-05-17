@@ -17,7 +17,7 @@
   "MysteryModule": "MustNotBeHiddenOrKey",
   "Name": "Smash, Marry, Kill",
   "Origin": "Mods",
-  "Published": "2024-06-01",
+  "Published": "2024-05-17",
   "Quirks": "SolvesAtEnd, NeedsOtherSolves",
   "SortKey": "SMASHMARRYKILL",
   "SourceUrl": "https://github.com/ObjectsCountries/Smash-Marry-Kill",

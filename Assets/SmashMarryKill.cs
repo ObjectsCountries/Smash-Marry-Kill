@@ -20,7 +20,7 @@ public class SmashMarryKill : ModdedModule
 
     private int currentIndex = 0;
     private bool firstClick = false;
-    private bool doneWithCategorization = false;
+    internal bool doneWithCategorization = false;
     private enum SMKwords
     {
         SMASH,
@@ -29,18 +29,19 @@ public class SmashMarryKill : ModdedModule
     }
 
     private static List<SMKwords> possibilities = new List<SMKwords>();
-    private SMKwords? currentSelection = null;
+    private static SMKwords? currentSelection = null;
+    private bool newSelectionChosen = false;
 
-    private static List<string> moduleNames = new List<string>();
-    private static List<string> moduleNamesCopy = new List<string>();
+    private List<string> moduleNames = new List<string>();
+    private List<string> usedModules = new List<string>();
     private static Dictionary<string, SMKwords> allModules = new Dictionary<string, SMKwords>();
     private List<string> newSolved = new List<string>();
     private string[] newSolvedCopy = new string[] { };
     private string lastSolvedModule = "";
     private string[] oldSolved = new string[] { };
 
-    private int modulesSolved = -1;
-    private int totalNonIgnored = -1;
+    internal int modulesSolved = -1;
+    internal int totalNonIgnored = -1;
     private int orgIndex = -1;
     private KMBombModule[] allMMs;
     private List<string> allHidden = new List<string>();
@@ -86,29 +87,38 @@ public class SmashMarryKill : ModdedModule
 
     protected override void OnActivate()
     {
+        allModules.Clear();
+        possibilities.Clear();
+        allSMKs.Clear();
+        currentSelection = null;
         StartCoroutine(WaitForBosses());
     }
 
     private void CandidateSync()
     {
-        Log("DEBUG: CandidateSync has been called.");
-        foreach (SmashMarryKill smk in allSMKs)
+        try
         {
-            if (smk != this)
+            for (int i = 1; i < allSMKs.Count; i++)
             {
-                for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 3; j++)
                 {
-                    smk.candidates[i].GetComponentInChildren<TextMesh>().color = candidates[i].GetComponentInChildren<TextMesh>().color;
-                    smk.candidates[i].GetComponentInChildren<TextMesh>().text = candidates[i].GetComponentInChildren<TextMesh>().text;
+                    if (allSMKs[i].candidates[j].gameObject.activeSelf)
+                    {
+                        allSMKs[i].candidates[j].GetComponentInChildren<TextMesh>().color = allSMKs[0].candidates[j].GetComponentInChildren<TextMesh>().color;
+                        allSMKs[i].candidates[j].GetComponentInChildren<TextMesh>().text = allSMKs[0].candidates[j].GetComponentInChildren<TextMesh>().text;
+                    }
                 }
-                smk.result.text = result.text;
+                allSMKs[i].result.text = allSMKs[0].result.text;
             }
+        }
+        catch (NullReferenceException)
+        {
+            return;
         }
     }
 
     private void SingleSync(int index)
     {
-        Log("DEBUG: SingleSync has been called with an index of " + index + ".");
         foreach (SmashMarryKill smk in allSMKs)
         {
             if (smk != this)
@@ -125,7 +135,6 @@ public class SmashMarryKill : ModdedModule
         ignoredModules = boss.GetIgnoredModules("Smash, Marry, Kill", new string[] { "Smash, Marry, Kill", "Mystery Module", "Organization" });
         totalNonIgnored = bomb.GetSolvableModuleNames().Count(x => !ignoredModules.Contains(x));
         moduleNames = bomb.GetSolvableModuleNames().Where(x => !ignoredModules.Contains(x)).Distinct().ToList();
-        moduleNamesCopy = new List<string>(moduleNames);
         foreach (string module in allHidden)
         {
             if (bomb.GetSolvableModuleNames().Count(m => m == module) == allHidden.Count(m => m == module))
@@ -136,8 +145,6 @@ public class SmashMarryKill : ModdedModule
         TextMesh[] candidateTexts = candidates.Select(x => x.GetComponentInChildren<TextMesh>()).ToArray();
         if (moduleNames.Count == 0)
         {
-            Get<KMSelectable>().Children = new[] { candidates[1] };
-            Get<KMSelectable>().UpdateChildrenProperly();
             candidateTexts[0].text = "";
             candidateTexts[0].gameObject.SetActive(false);
             candidateTexts[1].fontSize = 90;
@@ -145,6 +152,8 @@ public class SmashMarryKill : ModdedModule
             candidates[1].Highlight.transform.localScale = new Vector3(8, 1, 8);
             candidateTexts[2].text = "";
             candidateTexts[2].gameObject.SetActive(false);
+            Get<KMSelectable>().Children = new[] { candidates[1] };
+            Get<KMSelectable>().UpdateChildrenProperly();
             result.text = "";
             candidates[1].Set(onInteract: () =>
             {
@@ -160,8 +169,8 @@ public class SmashMarryKill : ModdedModule
             {
                 do
                 {
-                    moduleName.text = moduleNames[UnityEngine.Random.Range(0, moduleNames.Count)];
-                } while (moduleNamesCopy.Except(moduleNames).Contains(moduleName.text));
+                    moduleName.text = moduleNames.PickRandom();
+                } while (usedModules.Contains(moduleName.text));
             }
             else
             {
@@ -175,9 +184,14 @@ public class SmashMarryKill : ModdedModule
                     candidate.gameObject.SetActive(false);
                 }
             }
-            CandidateSync();
+            usedModules.Add(moduleName.text);
             candidate.Set(onInteract: () =>
             {
+                if (!recursionPrevention)
+                {
+                    candidate.AddInteractionPunch(.1f);
+                    Play(Sound.BigButtonPress);
+                }
                 if (moduleName.color == Color.white)
                 {
                     Log("Categorized " + moduleName.text + " as " + result.text + ".");
@@ -189,32 +203,28 @@ public class SmashMarryKill : ModdedModule
                     }
                     if (currentIndex == 2 && firstClick && moduleNames.Count > 0)
                     {
-                        bool done = false;
                         foreach (KMSelectable candidate_ in candidates)
                         {
                             TextMesh moduleName_ = candidate_.GetComponentInChildren<TextMesh>();
                             if ((candidate_.name == "secondCandidate" && moduleNames.Count == 1) || (candidate_.name == "thirdCandidate" && (moduleNames.Count == 1 || moduleNames.Count == 2)))
                             {
                                 moduleName_.text = "";
-                                done = true;
                                 candidate_.gameObject.SetActive(false);
-                            }
-                            if (done)
-                            {
                                 continue;
                             }
                             if (moduleNames.Count != 1)
                             {
                                 do
                                 {
-                                    moduleName_.text = moduleNames[UnityEngine.Random.Range(0, moduleNames.Count)];
-                                } while (moduleNamesCopy.Except(moduleNames).Contains(moduleName_.text));
+                                    moduleName_.text = moduleNames.PickRandom();
+                                } while ((candidate_.name == "secondCandidate" && candidates[0].GetComponentInChildren<TextMesh>().text == moduleName_.text) || (candidate_.name == "thirdCandidate" && (candidates[0].GetComponentInChildren<TextMesh>().text == moduleName_.text || candidates[1].GetComponentInChildren<TextMesh>().text == moduleName_.text)));
                             }
                             else
                             {
                                 moduleName_.text = moduleNames[0];
                             }
                             moduleName_.color = Color.white;
+                            usedModules.Add(moduleName_.text);
                         }
                     }
                     firstClick = true;
@@ -225,7 +235,6 @@ public class SmashMarryKill : ModdedModule
                     {
                         SingleSync(Array.IndexOf(candidates, candidate));
                     }
-                    CandidateSync();
                     if (moduleNames.Count == 0)
                     {
                         if (allModules.Where(pair => pair.Value == SMKwords.SMASH).Select(pair => pair.Key).Count() == 0)
@@ -269,7 +278,10 @@ public class SmashMarryKill : ModdedModule
                             numberHiddenByMM = allHidden.Contains(module.Key) ? 1 : 0;
                             for (int i = 0; i < mods.Count(x => x == module.Key && !bomb.GetSolvedModuleNames().Contains(x)) - numberHiddenByMM; i++)
                             {
-                                possibilities.Add(module.Value);
+                                if (this == allSMKs[0])
+                                {
+                                    possibilities.Add(module.Value);
+                                }
                             }
                         }
                         Get<KMSelectable>().Children = new KMSelectable[] { };
@@ -297,11 +309,18 @@ public class SmashMarryKill : ModdedModule
         }
         if (!ignore)
         {
-            if (lastSolved != "" && allModules.ContainsKey(lastSolved) && allModules[lastSolved] != currentSelection && !mmHidingThis)
+            if (lastSolved != "" && allModules.ContainsKey(lastSolved) && allModules[lastSolved] != currentSelection && !mmHidingThis && this == allSMKs[0])
             {
-                Strike("STRIKE! Solved " + lastSolved + ", a " + allModules[lastSolved] + " module when a " + currentSelection + " module was supposed to be solved.");
+                if (org == null)
+                {
+                    Strike("STRIKE! Solved " + lastSolved + ", a " + allModules[lastSolved] + " module when a " + currentSelection + " module was supposed to be solved.");
+                }
+                else
+                {
+                    Log("STRIKE (from Organization)! Solved " + lastSolved + ", a " + allModules[lastSolved] + " module when a " + currentSelection + " module was supposed to be solved.");
+                }
             }
-            if (allModules.ContainsKey(lastSolved))
+            if (allModules.ContainsKey(lastSolved) && this == allSMKs[0])
             {
                 possibilities.Remove(allModules[lastSolved]);
             }
@@ -327,23 +346,32 @@ public class SmashMarryKill : ModdedModule
         {
             if (((allHidden.Contains(lastSolved) && bomb.GetSolvedModuleNames().Count(x => x == lastSolved) != bomb.GetSolvableModuleNames().Count(x => x == lastSolved)) || !allHidden.Contains(lastSolved)) && possibilities.Count > 0)
             {
-                if (this == allSMKs[0])
-                {
-                    currentSelection = possibilities.PickRandom();
-                }
-                else
-                {
-                    currentSelection = allSMKs[0].currentSelection;
-                }
-                Log("Current selection: " + currentSelection);
-                string currentlySolvable = string.Join(", ", allModules.Where(pair => pair.Value == currentSelection && bomb.GetSolvedModuleNames().Count(x => x == pair.Key) != bomb.GetSolvableModuleNames().Count(x => x == pair.Key)).Select(pair => pair.Key).ToArray());
-                Log("You are allowed to solve any of the following: " + currentlySolvable + ".");
+                StartCoroutine(SyncCurrentSelection());
             }
         }
         else
         {
             StartCoroutine(OrgUpdateList());
         }
+    }
+
+    private IEnumerator SyncCurrentSelection()
+    {
+        if (this == allSMKs[0])
+        {
+            currentSelection = possibilities.PickRandom();
+            yield return new WaitForSeconds(.05f);
+            newSelectionChosen = true;
+            yield return new WaitForSeconds(.05f);
+            newSelectionChosen = false;
+        }
+        else
+        {
+            yield return new WaitUntil(() => allSMKs[0].newSelectionChosen);
+        }
+        Log("Current selection: " + currentSelection);
+        string currentlySolvable = string.Join(", ", allModules.Where(pair => pair.Value == currentSelection && bomb.GetSolvedModuleNames().Count(x => x == pair.Key) != bomb.GetSolvableModuleNames().Count(x => x == pair.Key)).Select(pair => pair.Key).ToArray());
+        Log("You are allowed to solve any of the following: " + currentlySolvable + ".");
         result.text = "" + currentSelection;
     }
 
@@ -352,13 +380,10 @@ public class SmashMarryKill : ModdedModule
         List<string> orgOrderCopy = new List<string>(orgOrder);
         if (bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x)) > 0)
         {
-            Log("DEBUG: Before WaitWhile");
             yield return new WaitWhile(() => orgOrder[0] == orgOrderCopy[0]);
-            Log("DEBUG: After WaitWhile");
         }
         if (allModules.ContainsKey(orgOrder[0]))
         {
-            Log("DEBUG: orgOrder is " + string.Join(", ", orgOrder.ToArray()) + ".");
             currentSelection = allModules[orgOrder[0]];
             Log("Current selection: " + currentSelection);
             Log("Organization is requiring " + orgOrder[0] + " to be solved.");
@@ -369,6 +394,10 @@ public class SmashMarryKill : ModdedModule
 
     void Update()
     {
+        if (!doneWithCategorization && allSMKs.Count > 0 && this == allSMKs[0])
+        {
+            CandidateSync();
+        }
         if (modulesSolved != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x)) && doneWithCategorization)
         {
             modulesSolved++;
@@ -420,15 +449,29 @@ public class SmashMarryKill : ModdedModule
         else if (modulesSolved != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x)))
         {
             modulesSolved++;
+            newSolved = bomb.GetSolvedModuleNames().Where(x => !ignoredModules.Contains(x)).ToList();
+            newSolvedCopy = newSolved.ToArray();
+            foreach (string module in oldSolved)
+            {
+                if (newSolved.Contains(module))
+                {
+                    newSolved.Remove(module);
+                }
+            }
+            oldSolved = newSolvedCopy;
+            if (newSolved.Count(x => !ignoredModules.Contains(x)) != 0)
+            {
+                lastSolvedModule = newSolved[0];
+            }
             if (modulesSolved != 0)
             {
                 if (mmHidingThis)
                 {
-                    Log("A module was solved while Smash, Marry, Kill was hidden by Mystery Module.");
+                    Log(lastSolvedModule + " was solved while Smash, Marry, Kill was hidden by Mystery Module.");
                 }
-                else
+                else if (this == allSMKs.First(x => !x.mmHidingThis) && !(allHidden.Contains(lastSolvedModule) && bomb.GetSolvedModuleNames().Count(x => x == lastSolvedModule) == bomb.GetSolvableModuleNames().Count(x => x == lastSolvedModule)))
                 {
-                    Strike("STRIKE! Solved a module before categorization was finished.");
+                    Strike("STRIKE! Solved " + lastSolvedModule + " before categorization was finished.");
                 }
             }
         }

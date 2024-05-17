@@ -1242,7 +1242,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e84a4af73a97b4a469710b6c709963c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TwitchHelpMessage: 
+  TwitchHelpMessage: '!{0}, then a sequence of digits from 1 to 3; 1 is the top button,
+    2 is the middle button, 3 is the bottom button. Once everything is done, !{0}
+    finish to solve the module.'
   TwitchManualCode: 
   TwitchAbandonModule: []
 --- !u!114 &114320984649561112
