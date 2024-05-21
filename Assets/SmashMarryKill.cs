@@ -132,7 +132,7 @@ public class SmashMarryKill : ModdedModule
 
     private void Setup()
     {
-        ignoredModules = boss.GetIgnoredModules("Smash, Marry, Kill", new string[] { "Smash, Marry, Kill", "Mystery Module", "Organization" });
+        ignoredModules = boss.GetIgnoredModules("Smash, Marry, Kill", new string[] { "Smash, Marry, Kill", "Souvenir", "Mystery Module", "Organization" });
         totalNonIgnored = bomb.GetSolvableModuleNames().Count(x => !ignoredModules.Contains(x));
         moduleNames = bomb.GetSolvableModuleNames().Where(x => !ignoredModules.Contains(x)).Distinct().ToList();
         foreach (string module in allHidden)
@@ -311,7 +311,11 @@ public class SmashMarryKill : ModdedModule
         {
             if (lastSolved != "" && allModules.ContainsKey(lastSolved) && allModules[lastSolved] != currentSelection && !mmHidingThis && this == allSMKs[0])
             {
-                if (org == null)
+                if (bomb.GetSolvableModuleNames().Contains("Access Codes"))
+                {
+                    Log("STRIKE (from Access Codes)! Solved " + lastSolved + ", a " + allModules[lastSolved] + " module when a " + currentSelection + " module was supposed to be solved.");
+                }
+                else if (org == null)
                 {
                     Strike("STRIKE! Solved " + lastSolved + ", a " + allModules[lastSolved] + " module when a " + currentSelection + " module was supposed to be solved.");
                 }
@@ -357,9 +361,12 @@ public class SmashMarryKill : ModdedModule
 
     private IEnumerator SyncCurrentSelection()
     {
+
         if (this == allSMKs[0])
         {
-            currentSelection = possibilities.PickRandom();
+            currentSelection = bomb.GetSolvableModuleNames().Contains("Access Codes") && !bomb.GetSolvedModuleNames().Contains("Access Codes")
+                ? allModules["Access Codes"]
+                : possibilities.PickRandom();
             yield return new WaitForSeconds(.05f);
             newSelectionChosen = true;
             yield return new WaitForSeconds(.05f);
