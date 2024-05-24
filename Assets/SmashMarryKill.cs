@@ -185,8 +185,25 @@ public class SmashMarryKill : ModdedModule
                 }
             }
             usedModules.Add(moduleName.text);
+            GetComponent<KMSelectable>().Set(
+                onDeselect: () =>
+                {
+                    if (doneWithCategorization)
+                    {
+                        Get<KMSelectable>().Children = new KMSelectable[] { };
+                        Get<KMSelectable>().UpdateChildrenProperly();
+                        candidateTexts[0].gameObject.SetActive(false);
+                        candidateTexts[1].gameObject.SetActive(false);
+                        candidateTexts[2].gameObject.SetActive(false);
+                    }
+                }
+            );
             candidate.Set(onInteract: () =>
             {
+                if (doneWithCategorization)
+                {
+                    return;
+                }
                 if (!recursionPrevention)
                 {
                     candidate.AddInteractionPunch(.1f);
@@ -284,14 +301,10 @@ public class SmashMarryKill : ModdedModule
                                 }
                             }
                         }
-                        Get<KMSelectable>().Children = new KMSelectable[] { };
-                        Get<KMSelectable>().UpdateChildrenProperly();
-                        candidateTexts[0].gameObject.SetActive(false);
-                        candidateTexts[1].gameObject.SetActive(false);
-                        candidateTexts[2].gameObject.SetActive(false);
                         doneWithCategorization = true;
                         result.fontSize = 90;
                         result.transform.localPosition = new Vector3(0, 0.0106f, 0);
+                        StartCoroutine(SyncCurrentSelection(false));
                         SMKselect("");
                     }
                 }
@@ -359,7 +372,7 @@ public class SmashMarryKill : ModdedModule
         }
     }
 
-    private IEnumerator SyncCurrentSelection()
+    private IEnumerator SyncCurrentSelection(bool init = true)
     {
 
         if (this == allSMKs[0])
@@ -376,9 +389,12 @@ public class SmashMarryKill : ModdedModule
         {
             yield return new WaitUntil(() => allSMKs[0].newSelectionChosen);
         }
-        Log("Current selection: " + currentSelection);
-        string currentlySolvable = string.Join(", ", allModules.Where(pair => pair.Value == currentSelection && bomb.GetSolvedModuleNames().Count(x => x == pair.Key) != bomb.GetSolvableModuleNames().Count(x => x == pair.Key)).Select(pair => pair.Key).ToArray());
-        Log("You are allowed to solve any of the following: " + currentlySolvable + ".");
+        if (init)
+        {
+            Log("Current selection: " + currentSelection);
+            string currentlySolvable = string.Join(", ", allModules.Where(pair => pair.Value == currentSelection && bomb.GetSolvedModuleNames().Count(x => x == pair.Key) != bomb.GetSolvableModuleNames().Count(x => x == pair.Key)).Select(pair => pair.Key).ToArray());
+            Log("You are allowed to solve any of the following: " + currentlySolvable + ".");
+        }
         result.text = "" + currentSelection;
     }
 
