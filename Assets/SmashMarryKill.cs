@@ -14,6 +14,7 @@ public class SmashMarryKill : ModdedModule
     public TextMesh result;
     public KMBombInfo bomb;
     public KMSelectable[] candidates;
+    public KMSelectable jank;
     public KMBossModule boss;
     private KMBombModule org = null;
     private string[] ignoredModules = new string[] { };
@@ -162,6 +163,10 @@ public class SmashMarryKill : ModdedModule
             });
             return;
         }
+        jank.Set(onInteract: () =>
+        {
+            Log("Pressed the jank button (likely with a controller).");
+        });
         foreach (KMSelectable candidate in candidates)
         {
             TextMesh moduleName = candidate.GetComponentInChildren<TextMesh>();
@@ -185,19 +190,6 @@ public class SmashMarryKill : ModdedModule
                 }
             }
             usedModules.Add(moduleName.text);
-            GetComponent<KMSelectable>().Set(
-                onDeselect: () =>
-                {
-                    if (doneWithCategorization)
-                    {
-                        Get<KMSelectable>().Children = new KMSelectable[] { };
-                        Get<KMSelectable>().UpdateChildrenProperly();
-                        candidateTexts[0].gameObject.SetActive(false);
-                        candidateTexts[1].gameObject.SetActive(false);
-                        candidateTexts[2].gameObject.SetActive(false);
-                    }
-                }
-            );
             candidate.Set(onInteract: () =>
             {
                 if (doneWithCategorization)
@@ -302,6 +294,11 @@ public class SmashMarryKill : ModdedModule
                             }
                         }
                         doneWithCategorization = true;
+                        Get<KMSelectable>().Children = new KMSelectable[] { jank };
+                        Get<KMSelectable>().UpdateChildrenProperly();
+                        candidateTexts[0].gameObject.SetActive(false);
+                        candidateTexts[1].gameObject.SetActive(false);
+                        candidateTexts[2].gameObject.SetActive(false);
                         result.fontSize = 90;
                         result.transform.localPosition = new Vector3(0, 0.0106f, 0);
                         StartCoroutine(SyncCurrentSelection(false));
