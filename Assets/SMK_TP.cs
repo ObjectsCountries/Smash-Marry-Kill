@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Wawa.TwitchPlays;
 using Wawa.TwitchPlays.Domains;
@@ -59,14 +60,28 @@ public sealed class SMK_TP : Twitch<SmashMarryKill>
 
     public override IEnumerable<Instruction> ForceSolve()
     {
+        Module.Log("Force solved by Twitch mod.");
         if (Module.modulesSolved == Module.totalNonIgnored)
         {
             yield return Module.candidates[1];
         }
         else
         {
-            yield return TwitchString.SendToChatError("{0}, you can’t solve yet.");
-            yield break;
+            if (!Module.doneWithCategorization)
+            {
+                TextMesh[] candidateTexts = Module.candidates.Select(x => x.GetComponentInChildren<TextMesh>()).ToArray();
+                foreach (TextMesh t in candidateTexts)
+                {
+                    if (t.gameObject.activeSelf)
+                    {
+                        t.gameObject.SetActive(false);
+                    }
+                }
+            }
+            Module.result.fontSize = 90;
+            Module.result.transform.localPosition = new Vector3(0, 0.0106f, 0);
+            Module.Solve("Done!");
+            Module.result.text = "DONE";
         }
     }
 }

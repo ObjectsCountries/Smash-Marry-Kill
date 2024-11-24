@@ -21,7 +21,7 @@ MonoBehaviour:
     input was read)\n\n[url=https://ktane.timwi.de/HTML/Smash,%20Marry,%20Kill.html]HTML
     Manual[/url]\n[url=https://ktane.timwi.de/PDF/Smash,%20Marry,%20Kill.pdf]PDF Manual[/url]\n[url=https://www.youtube.com/watch?v=R5En6QF8VVA]YouTube
     Tutorial[/url]"
-  version: 1.04
-  outputFolder: /home/kasra/.local/share/Steam/steamapps/common/Keep Talking
-    and Nobody Explodes/mods
+  version: 1.05
+  outputFolder: /home/kasra/.local/share/Steam/steamapps/common/Keep Talking and Nobody
+    Explodes/mods
   previewImage: {fileID: 2800000, guid: 67989e74a39a3467c8a21a1927163440, type: 3}

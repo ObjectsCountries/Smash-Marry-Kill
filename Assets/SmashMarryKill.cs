@@ -99,17 +99,20 @@ public class SmashMarryKill : ModdedModule
     {
         try
         {
-            for (int i = 1; i < allSMKs.Count; i++)
+            for (int i = 0; i < allSMKs.Count; i++)
             {
-                for (int j = 0; j < 3; j++)
+                if (!allSMKs[i].Status.IsSolved)
                 {
-                    if (allSMKs[i].candidates[j].gameObject.activeSelf)
+                    for (int j = 0; j < 3; j++)
                     {
-                        allSMKs[i].candidates[j].GetComponentInChildren<TextMesh>().color = allSMKs[0].candidates[j].GetComponentInChildren<TextMesh>().color;
-                        allSMKs[i].candidates[j].GetComponentInChildren<TextMesh>().text = allSMKs[0].candidates[j].GetComponentInChildren<TextMesh>().text;
+                        if (allSMKs[i].candidates[j].gameObject.activeSelf)
+                        {
+                            allSMKs[i].candidates[j].GetComponentInChildren<TextMesh>().color = allSMKs.First(x => !x.Status.IsSolved).candidates[j].GetComponentInChildren<TextMesh>().color;
+                            allSMKs[i].candidates[j].GetComponentInChildren<TextMesh>().text = allSMKs.First(x => !x.Status.IsSolved).candidates[j].GetComponentInChildren<TextMesh>().text;
+                        }
                     }
+                    allSMKs[i].result.text = allSMKs.First(x => !x.Status.IsSolved).result.text;
                 }
-                allSMKs[i].result.text = allSMKs[0].result.text;
             }
         }
         catch (NullReferenceException)
@@ -122,7 +125,7 @@ public class SmashMarryKill : ModdedModule
     {
         foreach (SmashMarryKill smk in allSMKs)
         {
-            if (smk != this)
+            if (smk != this && !smk.Status.IsSolved)
             {
                 smk.recursionPrevention = true;
                 smk.candidates[index].OnInteract();
@@ -287,7 +290,7 @@ public class SmashMarryKill : ModdedModule
                             numberHiddenByMM = allHidden.Contains(module.Key) ? 1 : 0;
                             for (int i = 0; i < mods.Count(x => x == module.Key && !bomb.GetSolvedModuleNames().Contains(x)) - numberHiddenByMM; i++)
                             {
-                                if (this == allSMKs[0])
+                                if (this == allSMKs.First(x => !x.Status.IsSolved))
                                 {
                                     possibilities.Add(module.Value);
                                 }
@@ -319,7 +322,7 @@ public class SmashMarryKill : ModdedModule
         }
         if (!ignore)
         {
-            if (lastSolved != "" && allModules.ContainsKey(lastSolved) && allModules[lastSolved] != currentSelection && !mmHidingThis && this == allSMKs[0])
+            if (lastSolved != "" && allModules.ContainsKey(lastSolved) && allModules[lastSolved] != currentSelection && !mmHidingThis && this == allSMKs.First(x => !x.Status.IsSolved))
             {
                 if (bomb.GetSolvableModuleNames().Contains("Access Codes"))
                 {
@@ -334,7 +337,7 @@ public class SmashMarryKill : ModdedModule
                     Log("STRIKE (from Organization)! Solved " + lastSolved + ", a " + allModules[lastSolved] + " module when a " + currentSelection + " module was supposed to be solved.");
                 }
             }
-            if (allModules.ContainsKey(lastSolved) && this == allSMKs[0])
+            if (allModules.ContainsKey(lastSolved) && this == allSMKs.First(x => !x.Status.IsSolved))
             {
                 possibilities.Remove(allModules[lastSolved]);
             }
@@ -372,7 +375,7 @@ public class SmashMarryKill : ModdedModule
     private IEnumerator SyncCurrentSelection(bool init = true)
     {
 
-        if (this == allSMKs[0])
+        if (this == allSMKs.First(x => !x.Status.IsSolved))
         {
             currentSelection = bomb.GetSolvableModuleNames().Contains("Access Codes") && !bomb.GetSolvedModuleNames().Contains("Access Codes")
                 ? allModules["Access Codes"]
@@ -384,7 +387,7 @@ public class SmashMarryKill : ModdedModule
         }
         else
         {
-            yield return new WaitUntil(() => allSMKs[0].newSelectionChosen);
+            yield return new WaitUntil(() => allSMKs.First(x => !x.Status.IsSolved).newSelectionChosen);
         }
         if (init)
         {
@@ -414,11 +417,15 @@ public class SmashMarryKill : ModdedModule
 
     void Update()
     {
-        if (!doneWithCategorization && allSMKs.Count > 0 && this == allSMKs[0])
+        if (Status.IsSolved)
+        {
+            return;
+        }
+        if (!Status.IsSolved && !doneWithCategorization && allSMKs.Count > 0 && this == allSMKs.First(x => !x.Status.IsSolved))
         {
             CandidateSync();
         }
-        if (modulesSolved != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x)) && doneWithCategorization)
+        if (!Status.IsSolved && modulesSolved != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x)) && doneWithCategorization)
         {
             modulesSolved++;
             newSolved = bomb.GetSolvedModuleNames().Where(x => !ignoredModules.Contains(x)).ToList();
@@ -466,7 +473,7 @@ public class SmashMarryKill : ModdedModule
                 }
             }
         }
-        else if (modulesSolved != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x)))
+        else if (!Status.IsSolved && modulesSolved != bomb.GetSolvedModuleNames().Count(x => !ignoredModules.Contains(x)))
         {
             modulesSolved++;
             newSolved = bomb.GetSolvedModuleNames().Where(x => !ignoredModules.Contains(x)).ToList();
