@@ -1,5 +1,5 @@
-﻿using Wawa.Extensions;
-using Wawa.Modules;
+﻿using wawa.Extensions;
+using wawa.Modules;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -202,7 +202,7 @@ public class SmashMarryKill : ModdedModule
                 if (!recursionPrevention)
                 {
                     candidate.AddInteractionPunch(.1f);
-                    Play(Sound.BigButtonPress);
+                    Play(new Sound[] { Sound.BigButtonPress });
                 }
                 if (moduleName.color == Color.white)
                 {
@@ -421,7 +421,7 @@ public class SmashMarryKill : ModdedModule
         {
             return;
         }
-        if (!Status.IsSolved && !doneWithCategorization && allSMKs.Count > 0 && this == allSMKs.First(x => !x.Status.IsSolved))
+        if (!Status.IsSolved && !doneWithCategorization && allSMKs.Count > 1 && this == allSMKs.First(x => !x.Status.IsSolved))
         {
             CandidateSync();
         }
